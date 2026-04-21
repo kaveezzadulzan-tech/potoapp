@@ -27,9 +27,10 @@ def register_routes(app):
             ]
         })
 
+    # FIXED: This now looks for sw.js in the root, not inside a 'js' folder
     @app.route('/sw.js')
     def service_worker():
-        return app.send_static_file('js/sw.js'), 200, {
+        return app.send_static_file('sw.js'), 200, {
             'Content-Type': 'application/javascript'
         }
 
