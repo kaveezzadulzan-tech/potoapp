@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Field Image Manager</title>
+<link rel="manifest" href="/manifest.json">
+<style>
+:root {
+  --bg:       #0f0f0f;
+  --s1:       #1a1a1a;
+  --s2:       #222;
+  --s3:       #2a2a2a;
+  --s4:       #333;
+  --border:   #2e2e2e;
+  --border2:  #3a3a3a;
+  --text:     #e8e8e8;
+  --text2:    #9e9e9e;
+  --text3:    #555;
+  --blue:     #4285f4;
+  --blue-d:   #1a56c4;
+  --blue-bg:  #0d2044;
+  --green:    #34a853;
+  --green-bg: #0b2818;
+  --amber:    #fbbc04;
+  --amber-bg: #2d2200;
+  --red:      #ea4335;
+  --red-bg:   #2d0d0a;
+  --r:        10px;
+  --r-sm:     7px;
+  --r-pill:   100px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Google Sans', system-ui, -apple-system, sans-serif; overflow: hidden; }
+
+/* ── App shell ── */
+#app { height: 100dvh; display: flex; flex-direction: column; }
+#topbar {
+  background: var(--s1); border-bottom: 0.5px solid var(--border);
+  padding: env(safe-area-inset-top, 0) 14px 0;
+  flex-shrink: 0; z-index: 10;
+}
+.tb-inner { display: flex; align-items: center; gap: 10px; padding: 10px 0; min-height: 50px; }
+.tb-back { width: 34px; height: 34px; border-radius: 50%; background: var(--s3); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.tb-back svg { width: 18px; height: 18px; fill: var(--text2); }
+.tb-titles { flex: 1; min-width: 0; }
+.tb-title { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.tb-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.icon-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--s3); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-btn svg { width: 17px; height: 17px; fill: var(--text2); }
+.icon-btn:active { background: var(--s4); }
+
+#content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 12px 100px; }
+#bottombar {
+  background: var(--s1); border-top: 0.5px solid var(--border);
+  display: flex; justify-content: space-around;
+  padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  flex-shrink: 0;
+}
+.tab { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 20px; border: none; background: none; cursor: pointer; }
+.tab svg { width: 20px; height: 20px; }
+.tab span { font-size: 9px; font-weight: 500; }
+.tab.active svg { fill: var(--blue); }
+.tab.active span { color: var(--blue); }
+.tab:not(.active) svg { fill: var(--text3); }
+.tab:not(.active) span { color: var(--text3); }
+
+/* ── Sync bar ── */
+.sync-bar { background: var(--green-bg); border: 0.5px solid #1a4a2a; border-radius: var(--r-sm); padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sync-bar span { font-size: 10px; color: var(--green); font-weight: 500; }
+.sync-bar button { background: var(--green); color: #fff; border: none; border-radius: 5px; padding: 4px 10px; font-size: 9px; font-weight: 500; cursor: pointer; }
+
+/* ── Section label ── */
+.slabel { font-size: 9px; font-weight: 500; color: var(--text3); letter-spacing: .7px; text-transform: uppercase; margin-bottom: 7px; }
+.slabel-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.slabel-row .slabel { margin-bottom: 0; }
+.slabel-row .link-btn { font-size: 10px; color: var(--blue); background: none; border: none; cursor: pointer; font-weight: 500; }
+
+/* ── Project card ── */
+.project-card { background: var(--s1); border: 0.5px solid var(--border); border-radius: var(--r); padding: 10px 11px; margin-bottom: 7px; cursor: pointer; transition: background .1s; }
+.project-card:active { background: var(--s2); }
+.pc-row { display: flex; align-items: center; gap: 9px; }
+.pc-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pc-icon svg { width: 16px; height: 16px; fill: var(--blue); }
+.pc-info { flex: 1; min-width: 0; }
+.pc-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-meta { font-size: 10px; color: var(--text2); margin-top: 1px; }
+.pc-chev svg { width: 14px; height: 14px; fill: var(--text3); }
+.pc-folders { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; padding-top: 7px; border-top: 0.5px solid var(--border); }
+.fp { display: flex; align-items: center; gap: 3px; padding: 3px 7px; border-radius: var(--r-pill); background: var(--s3); }
+.fp svg { width: 9px; height: 9px; fill: var(--text3); flex-shrink: 0; }
+.fp span { font-size: 9px; color: var(--text2); white-space: nowrap; max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+.fp-more { padding: 3px 7px; border-radius: var(--r-pill); background: var(--s2); font-size: 9px; color: var(--text3); }
+.pc-chips { display: flex; gap: 4px; margin-top: 6px; }
+.chip { padding: 2px 7px; border-radius: var(--r-pill); font-size: 8px; font-weight: 500; }
+.chip-g { background: var(--green-bg); color: #5dba7e; }
+.chip-a { background: var(--amber-bg); color: #f9c94e; }
+.chip-r { background: var(--red-bg); color: #f28b82; }
+
+/* ── Add card ── */
+.add-card { border: 1px dashed var(--border2); background: transparent; border-radius: var(--r); padding: 10px; display: flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; width: 100%; margin-bottom: 7px; }
+.add-card:active { background: var(--s2); }
+.add-card svg { width: 14px; height: 14px; fill: var(--blue); }
+.add-card span { font-size: 11px; color: var(--blue); font-weight: 500; }
+
+/* ── Folder card ── */
+.folder-card { background: var(--s1); border: 0.5px solid var(--border); border-radius: var(--r); padding: 9px 11px; margin-bottom: 6px; cursor: pointer; transition: background .1s; }
+.folder-card:active { background: var(--s2); }
+.fc-row { display: flex; align-items: center; gap: 8px; }
+.fc-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.fc-name { flex: 1; font-size: 12px; font-weight: 500; color: var(--text); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-count { font-size: 10px; color: var(--text2); flex-shrink: 0; }
+.fc-chev svg { width: 12px; height: 12px; fill: var(--text3); margin-left: 4px; }
+.fc-chips { display: flex; gap: 4px; margin-top: 6px; padding-top: 6px; border-top: 0.5px solid var(--border); }
+
+/* ── Buttons ── */
+.btn-primary { background: var(--blue); color: #fff; border: none; border-radius: var(--r-pill); padding: 11px 0; font-size: 13px; font-weight: 500; width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; margin-bottom: 7px; }
+.btn-primary svg { width: 15px; height: 15px; fill: #fff; }
+.btn-primary:active { background: var(--blue-d); }
+.btn-outline { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); border-radius: var(--r-pill); padding: 10px 0; font-size: 13px; font-weight: 500; width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; cursor: pointer; margin-bottom: 7px; }
+.btn-outline svg { width: 15px; height: 15px; fill: var(--blue); }
+.btn-outline:active { background: var(--blue-bg); }
+.btn-danger { background: var(--red-bg); color: var(--red); border: none; border-radius: var(--r-sm); padding: 9px 0; font-size: 12px; font-weight: 500; width: 100%; cursor: pointer; margin-bottom: 7px; }
+
+/* ── Divider ── */
+.divider { height: 0.5px; background: var(--border); margin: 10px 0; }
+
+/* ── Photo grid ── */
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 10px; }
+.photo-thumb { border-radius: var(--r-sm); aspect-ratio: 1; position: relative; overflow: hidden; background: var(--s2); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb svg { width: 22px; height: 22px; fill: var(--text3); }
+.photo-badge { position: absolute; bottom: 4px; right: 4px; width: 13px; height: 13px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.photo-badge svg { width: 8px; height: 8px; fill: #fff; }
+.badge-g { background: var(--green); }
+.badge-a { background: var(--amber); }
+.photo-add { border: 1px dashed var(--border2); background: transparent; flex-direction: column; gap: 3px; }
+.photo-add svg { fill: var(--blue) !important; width: 20px !important; height: 20px !important; }
+.photo-add span { font-size: 8px; color: var(--blue); font-weight: 500; }
+.photo-del { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; display: none; }
+.photo-del svg { width: 10px; height: 10px; fill: #fff; }
+.photo-thumb:hover .photo-del, .photo-thumb.selected .photo-del { display: flex; }
+
+/* ── Settings screen ── */
+.settings-section { margin-bottom: 20px; }
+.settings-item { background: var(--s1); border: 0.5px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.settings-item-left { display: flex; flex-direction: column; gap: 2px; }
+.settings-item-left span:first-child { font-size: 13px; color: var(--text); font-weight: 500; }
+.settings-item-left span:last-child { font-size: 10px; color: var(--text2); }
+.settings-item-right { font-size: 12px; color: var(--text2); }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.stat-card { background: var(--s1); border: 0.5px solid var(--border); border-radius: var(--r-sm); padding: 12px; }
+.stat-card .stat-val { font-size: 22px; font-weight: 500; color: var(--text); }
+.stat-card .stat-lbl { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+/* ── Modal ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 100; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--s1); border-radius: 18px 18px 0 0; border-top: 0.5px solid var(--border2); padding: 20px 16px 32px; width: 100%; max-width: 480px; }
+.modal-handle { width: 36px; height: 4px; background: var(--s4); border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 14px; }
+.modal-input { background: var(--s2); border: 0.5px solid var(--border2); border-radius: var(--r-sm); padding: 11px 13px; font-size: 14px; color: var(--text); width: 100%; margin-bottom: 10px; outline: none; }
+.modal-input:focus { border-color: var(--blue); }
+.modal-actions { display: flex; gap: 8px; margin-top: 4px; }
+.modal-actions .btn-primary { margin-bottom: 0; flex: 1; }
+.modal-cancel { flex: 1; background: var(--s3); color: var(--text2); border: none; border-radius: var(--r-pill); padding: 11px 0; font-size: 13px; font-weight: 500; cursor: pointer; }
+
+/* ── Toast ── */
+#toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--s4); color: var(--text); padding: 9px 18px; border-radius: var(--r-pill); font-size: 12px; font-weight: 500; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 200; white-space: nowrap; }
+#toast.show { opacity: 1; }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 48px 20px; }
+.empty svg { width: 48px; height: 48px; fill: var(--text3); margin-bottom: 12px; }
+.empty p { font-size: 13px; color: var(--text2); }
+
+/* ── Camera input ── */
+#cameraInput { display: none; }
+
+/* ── Offline badge ── */
+.offline-pill { background: var(--amber-bg); border: 0.5px solid #4a3800; border-radius: var(--r-pill); padding: 3px 9px; font-size: 9px; color: var(--amber); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+.offline-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="tb-inner">
+      <button class="tb-back" id="backBtn" style="display:none" onclick="goBack()">
+        <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      </button>
+      <div class="tb-titles">
+        <div class="tb-title" id="tbTitle">Field Image Manager</div>
+        <div class="tb-sub" id="tbSub"></div>
+      </div>
+      <div class="tb-actions" id="tbActions"></div>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <div id="bottombar">
+    <button class="tab active" id="tab-projects" onclick="switchTab('projects')">
+      <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+      <span>Projects</span>
+    </button>
+    <button class="tab" id="tab-sync" onclick="switchTab('sync')">
+      <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+      <span>Sync</span>
+    </button>
+    <button class="tab" id="tab-settings" onclick="switchTab('settings')">
+      <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+      <span>Settings</span>
+    </button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">New project</div>
+    <input class="modal-input" id="modalInput" placeholder="Enter name" autocomplete="off">
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="modalConfirm()" style="margin-bottom:0">
+        <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        Create
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<input type="file" id="cameraInput" accept="image/*" capture="environment">
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// State
+// ══════════════════════════════════════════════════════════════
+const S = {
+  view: 'projects',       // projects | folders | photos | sync | settings
+  project: null,
+  folder: null,
+  modalMode: null,        // 'project' | 'folder'
+  captureFolderId: null,
+};
+
+const API = '';  // same origin
+
+// ══════════════════════════════════════════════════════════════
+// IndexedDB — offline queue
+// ══════════════════════════════════════════════════════════════
+let _idb;
+async function getIDB() {
+  if (_idb) return _idb;
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('FieldCamQueue', 1);
+    r.onupgradeneeded = e => e.target.result.createObjectStore('q', { keyPath: 'id', autoIncrement: true });
+    r.onsuccess = e => { _idb = e.target.result; res(_idb); };
+    r.onerror   = e => rej(e);
+  });
+}
+async function queueAdd(item) {
+  const db = await getIDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('q', 'readwrite');
+    const r  = tx.objectStore('q').add(item);
+    r.onsuccess = () => res(r.result);
+    r.onerror   = rej;
+  });
+}
+async function queueGetAll() {
+  const db = await getIDB();
+  return new Promise((res, rej) => {
+    const r = db.transaction('q').objectStore('q').getAll();
+    r.onsuccess = () => res(r.result);
+    r.onerror   = rej;
+  });
+}
+async function queueClear() {
+  const db = await getIDB();
+  return new Promise((res, rej) => {
+    const r = db.transaction('q', 'readwrite').objectStore('q').clear();
+    r.onsuccess = res; r.onerror = rej;
+  });
+}
+async function queueDelete(id) {
+  const db = await getIDB();
+  return new Promise((res, rej) => {
+    const r = db.transaction('q', 'readwrite').objectStore('q').delete(id);
+    r.onsuccess = res; r.onerror = rej;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// API helpers
+// ══════════════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SVG helpers
+// ══════════════════════════════════════════════════════════════
+const SVG = {
+  folder:   '<svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>',
+  image:    '<svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>',
+  check:    '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>',
+  dl:       '<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>',
+  cam:      '<svg viewBox="0 0 24 24"><path d="M12 15.2l-4.24-4.24 1.41-1.42L11 11.38V4h2v7.38l1.83-1.83 1.41 1.42L12 15.2zM20 18H4v-2h16v2z"/></svg>',
+  plus:     '<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>',
+  trash:    '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>',
+  chev:     '<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>',
+  sync:     '<svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>',
+  warn:     '<svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
+};
+
+// ══════════════════════════════════════════════════════════════
+// Toast
+// ══════════════════════════════════════════════════════════════
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════════════════════
+// Topbar
+// ══════════════════════════════════════════════════════════════
+function setTopbar(title, sub, showBack, actions = '') {
+  document.getElementById('tbTitle').textContent = title;
+  document.getElementById('tbSub').textContent   = sub || '';
+  document.getElementById('backBtn').style.display = showBack ? 'flex' : 'none';
+  document.getElementById('tbActions').innerHTML = actions;
+}
+
+// ══════════════════════════════════════════════════════════════
+// Tab switching
+// ══════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  ['projects','sync','settings'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+  });
+  S.view = tab;
+  if (tab === 'projects') renderProjects();
+  else if (tab === 'sync') renderSync();
+  else if (tab === 'settings') renderSettings();
+}
+
+function goBack() {
+  if (S.view === 'photos') {
+    S.folder = null;
+    S.view   = 'folders';
+    renderFolders(S.project);
+  } else if (S.view === 'folders') {
+    S.project = null;
+    S.folder  = null;
+    S.view    = 'projects';
+    renderProjects();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Projects view
+// ══════════════════════════════════════════════════════════════
+async function renderProjects() {
+  setTopbar('Field Image Manager', '', false,
+    `<button class="icon-btn" onclick="openModal('project')" title="New project">${SVG.plus}</button>`
+  );
+  document.getElementById('bottombar').style.display = 'flex';
+
+  let html = '';
+  try {
+    const queue    = await queueGetAll();
+    const projects = await api('GET', '/api/projects');
+
+    if (queue.length > 0) {
+      html += `<div class="sync-bar">
+        <span>${queue.length} photo${queue.length>1?'s':''} waiting to sync</span>
+        <button onclick="doSync()">Sync now</button>
+      </div>`;
+    }
+
+    html += `<div class="slabel">${projects.length} project${projects.length!==1?'s':''}</div>`;
+
+    if (projects.length === 0) {
+      html += `<div class="empty">${SVG.folder}<p>No projects yet.<br>Tap + to create one.</p></div>`;
+    } else {
+      for (const p of projects) {
+        const folderPills = p.folder_previews.map(f =>
+          `<div class="fp">${SVG.folder}<span>${f.name}</span></div>`
+        ).join('');
+        const moreCount = p.folder_count - p.folder_previews.length;
+        const morePill  = moreCount > 0 ? `<span class="fp-more">+${moreCount} more</span>` : '';
+        const hasFolders = p.folder_count > 0;
+
+        const chips = [
+          p.synced_count  > 0 ? `<span class="chip chip-g">${p.synced_count} synced</span>`  : '',
+          p.offline_count > 0 ? `<span class="chip chip-a">${p.offline_count} offline</span>` : '',
+        ].join('');
+
+        html += `<div class="project-card" onclick="openProject(${p.id})">
+          <div class="pc-row">
+            <div class="pc-icon">${SVG.folder}</div>
+            <div class="pc-info">
+              <div class="pc-name">${p.name}</div>
+              <div class="pc-meta">${p.folder_count} folder${p.folder_count!==1?'s':''} · ${p.photo_count} photo${p.photo_count!==1?'s':''}</div>
+            </div>
+            <div class="pc-chev">${SVG.chev}</div>
+          </div>
+          ${hasFolders ? `<div class="pc-folders">${folderPills}${morePill}</div>` : ''}
+          ${chips ? `<div class="pc-chips">${chips}</div>` : ''}
+        </div>`;
+      }
+    }
+
+    html += `<button class="add-card" onclick="openModal('project')">${SVG.plus}<span>New project</span></button>`;
+  } catch(e) {
+    html = `<div class="empty">${SVG.warn}<p>Could not connect to server.<br>Check your connection.</p></div>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+async function openProject(id) {
+  try {
+    const projects = await api('GET', '/api/projects');
+    S.project = projects.find(p => p.id === id);
+    S.view = 'folders';
+    renderFolders(S.project);
+  } catch(e) { toast('Error loading project'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Folders view
+// ══════════════════════════════════════════════════════════════
+async function renderFolders(project) {
+  setTopbar(
+    project.name,
+    `${project.folder_count} folder${project.folder_count!==1?'s':''}`,
+    true,
+    `<button class="icon-btn" onclick="downloadProject(${project.id})" title="Download ZIP">${SVG.dl}</button>
+     <button class="icon-btn" onclick="confirmDeleteProject(${project.id})" title="Delete project">${SVG.trash}</button>`
+  );
+  document.getElementById('bottombar').style.display = 'flex';
+
+  let html = '';
+  try {
+    const folders = await api('GET', `/api/projects/${project.id}/folders`);
+
+    html += `<div class="slabel-row">
+      <div class="slabel">${folders.length} folder${folders.length!==1?'s':''}</div>
+      <button class="link-btn" onclick="openModal('folder')">+ New folder</button>
+    </div>`;
+
+    if (folders.length === 0) {
+      html += `<div class="empty">${SVG.folder}<p>No folders yet.<br>Create one to start capturing.</p></div>`;
+    } else {
+      for (const f of folders) {
+        const dot   = f.offline_count > 0 ? 'var(--amber)' : 'var(--green)';
+        const chips = [
+          f.synced_count  > 0 ? `<span class="chip chip-g">${f.synced_count} synced</span>`  : '',
+          f.offline_count > 0 ? `<span class="chip chip-a">${f.offline_count} offline</span>` : '',
+          f.photo_count === 0 ? `<span class="chip" style="background:var(--s3);color:var(--text3)">empty</span>` : '',
+        ].join('');
+
+        html += `<div class="folder-card" onclick="openFolder(${f.id}, '${f.name.replace(/'/g,"\\'")}', ${f.photo_count}, ${f.synced_count}, ${f.offline_count})">
+          <div class="fc-row">
+            <div class="fc-dot" style="background:${dot}"></div>
+            <div class="fc-name">${f.name}</div>
+            <div class="fc-count">${f.photo_count} photo${f.photo_count!==1?'s':''}</div>
+            <div class="fc-chev">${SVG.chev}</div>
+          </div>
+          ${chips ? `<div class="fc-chips">${chips}</div>` : ''}
+        </div>`;
+      }
+    }
+
+    html += `<button class="add-card" onclick="openModal('folder')">${SVG.plus}<span>New folder</span></button>`;
+    html += `<div class="divider"></div>`;
+    html += `<button class="btn-outline" onclick="downloadProject(${project.id})">${SVG.dl} Download project ZIP</button>`;
+  } catch(e) {
+    html = `<div class="empty">${SVG.warn}<p>Could not load folders.</p></div>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function openFolder(id, name, photoCount, synced, offline) {
+  S.folder = { id, name, photo_count: photoCount, synced_count: synced, offline_count: offline };
+  S.view   = 'photos';
+  renderPhotos(S.folder);
+}
+
+// ══════════════════════════════════════════════════════════════
+// Photos view
+// ══════════════════════════════════════════════════════════════
+async function renderPhotos(folder) {
+  setTopbar(
+    folder.name,
+    `${folder.photo_count} photo${folder.photo_count!==1?'s':''}`,
+    true,
+    `<button class="icon-btn" onclick="downloadFolder(${folder.id})" title="Download ZIP">${SVG.dl}</button>
+     <button class="icon-btn" onclick="confirmDeleteFolder(${folder.id})" title="Delete folder">${SVG.trash}</button>`
+  );
+  document.getElementById('bottombar').style.display = 'flex';
+
+  let html = '';
+  try {
+    const photos = await api('GET', `/api/folders/${folder.id}/photos`);
+    const queue  = (await queueGetAll()).filter(q => q.folderId === folder.id);
+
+    html += `<div class="photo-grid">`;
+
+    for (const p of photos) {
+      html += `<div class="photo-thumb" onclick="viewPhoto(${p.id}, '${p.filename}')">
+        <img src="/api/photos/${p.id}/image" alt="${p.filename}" loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        ${SVG.image}
+        <div class="photo-badge badge-g">${SVG.check}</div>
+        <button class="photo-del" onclick="event.stopPropagation();deletePhoto(${p.id})">${SVG.trash}</button>
+      </div>`;
+    }
+
+    for (const q of queue) {
+      html += `<div class="photo-thumb">
+        <img src="${q.dataUrl}" alt="${q.filename}">
+        <div class="photo-badge badge-a">${SVG.warn}</div>
+      </div>`;
+    }
+
+    html += `<div class="photo-thumb photo-add" onclick="triggerCamera(${folder.id})">
+      ${SVG.cam}<span>Capture</span>
+    </div>`;
+    html += `</div>`;
+
+    html += `<button class="btn-primary" onclick="triggerCamera(${folder.id})">${SVG.cam} Take photo</button>`;
+    html += `<button class="btn-outline" onclick="downloadFolder(${folder.id})">${SVG.dl} Download folder ZIP</button>`;
+
+  } catch(e) {
+    html = `<div class="empty">${SVG.warn}<p>Could not load photos.</p></div>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// Camera capture
+// ══════════════════════════════════════════════════════════════
+function triggerCamera(folderId) {
+  S.captureFolderId = folderId;
+  document.getElementById('cameraInput').click();
+}
+
+document.getElementById('cameraInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+
+  const filename = `${Date.now()}_${file.name}`;
+  const reader   = new FileReader();
+
+  reader.onload = async (ev) => {
+    const dataUrl  = ev.target.result;
+    const b64      = dataUrl.split(',')[1];
+    const folderId = S.captureFolderId;
+
+    if (navigator.onLine) {
+      try {
+        await api('POST', `/api/folders/${folderId}/photos`, {
+          filename, data: b64, mime_type: file.type
+        });
+        toast('Photo saved');
+        if (S.view === 'photos' && S.folder?.id === folderId) renderPhotos(S.folder);
+      } catch(err) {
+        await queueAdd({ folderId, filename, mimeType: file.type, dataUrl, data: b64 });
+        toast('Saved offline — sync when connected');
+        if (S.view === 'photos' && S.folder?.id === folderId) renderPhotos(S.folder);
+      }
+    } else {
+      await queueAdd({ folderId, filename, mimeType: file.type, dataUrl, data: b64 });
+      toast('Saved offline — sync when connected');
+      if (S.view === 'photos' && S.folder?.id === folderId) renderPhotos(S.folder);
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+// ══════════════════════════════════════════════════════════════
+// Sync view
+// ══════════════════════════════════════════════════════════════
+async function renderSync() {
+  setTopbar('Sync', 'Push offline photos to server', false, '');
+  document.getElementById('bottombar').style.display = 'flex';
+
+  const queue = await queueGetAll();
+  let html = '';
+
+  if (queue.length === 0) {
+    html = `<div class="empty">${SVG.check}<p>All photos are synced.</p></div>`;
+  } else {
+    html += `<div class="slabel">${queue.length} photo${queue.length!==1?'s':''} waiting</div>`;
+    for (const q of queue) {
+      html += `<div class="folder-card" style="cursor:default">
+        <div class="fc-row">
+          <div class="fc-dot" style="background:var(--amber)"></div>
+          <div class="fc-name">${q.filename}</div>
+          <span class="chip chip-a">offline</span>
+        </div>
+      </div>`;
+    }
+    html += `<div class="divider"></div>`;
+    html += `<button class="btn-primary" onclick="doSync()">${SVG.sync} Sync ${queue.length} photo${queue.length!==1?'s':''}</button>`;
+  }
+
+  document.getElementById('content').innerHTML = html;
+}
+
+async function doSync() {
+  const queue = await queueGetAll();
+  if (queue.length === 0) { toast('Nothing to sync'); return; }
+  if (!navigator.onLine)  { toast('No connection — try again later'); return; }
+
+  toast(`Syncing ${queue.length} photo${queue.length>1?'s':''}...`);
+
+  let ok = 0;
+  for (const q of queue) {
+    try {
+      await api('POST', `/api/folders/${q.folderId}/photos`, {
+        filename:  q.filename,
+        data:      q.data,
+        mime_type: q.mimeType,
+      });
+      await queueDelete(q.id);
+      ok++;
+    } catch(e) {
+      console.warn('Failed to sync', q.filename, e);
+    }
+  }
+
+  toast(`Synced ${ok} of ${queue.length} photos`);
+  if (S.view === 'sync')     renderSync();
+  if (S.view === 'projects') renderProjects();
+}
+
+// ══════════════════════════════════════════════════════════════
+// Settings view
+// ══════════════════════════════════════════════════════════════
+async function renderSettings() {
+  setTopbar('Settings', '', false, '');
+  document.getElementById('bottombar').style.display = 'flex';
+
+  let projects = [], queue = [];
+  try { projects = await api('GET', '/api/projects'); } catch(e) {}
+  try { queue = await queueGetAll(); } catch(e) {}
+
+  const totalPhotos  = projects.reduce((a,p) => a + p.photo_count, 0);
+  const totalFolders = projects.reduce((a,p) => a + p.folder_count, 0);
+
+  const html = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-val">${projects.length}</div><div class="stat-lbl">Projects</div></div>
+      <div class="stat-card"><div class="stat-val">${totalFolders}</div><div class="stat-lbl">Folders</div></div>
+      <div class="stat-card"><div class="stat-val">${totalPhotos}</div><div class="stat-lbl">Synced photos</div></div>
+      <div class="stat-card"><div class="stat-val">${queue.length}</div><div class="stat-lbl">Offline queue</div></div>
+    </div>
+    <div class="slabel">Connection</div>
+    <div class="settings-item">
+      <div class="settings-item-left">
+        <span>Server status</span>
+        <span>Railway backend</span>
+      </div>
+      <span class="settings-item-right" id="serverStatus">Checking...</span>
+    </div>
+    <div class="settings-item">
+      <div class="settings-item-left">
+        <span>Network</span>
+        <span>Device connection</span>
+      </div>
+      <span class="settings-item-right">${navigator.onLine ? 'Online' : 'Offline'}</span>
+    </div>
+    <div class="slabel" style="margin-top:14px">App</div>
+    <div class="settings-item">
+      <div class="settings-item-left">
+        <span>Version</span>
+        <span>Field Image Manager</span>
+      </div>
+      <span class="settings-item-right">1.0.0</span>
+    </div>
+    <div class="divider"></div>
+    <button class="btn-danger" onclick="clearQueue()">Clear offline queue</button>
+  `;
+
+  document.getElementById('content').innerHTML = html;
+
+  fetch('/health').then(r => r.json())
+    .then(() => { const el = document.getElementById('serverStatus'); if (el) el.textContent = 'Connected'; })
+    .catch(() => { const el = document.getElementById('serverStatus'); if (el) { el.textContent = 'Offline'; el.style.color = 'var(--red)'; } });
+}
+
+async function clearQueue() {
+  if (!confirm('Clear all offline photos? They will be lost permanently.')) return;
+  await queueClear();
+  toast('Queue cleared');
+  renderSettings();
+}
+
+// ══════════════════════════════════════════════════════════════
+// Modal
+// ══════════════════════════════════════════════════════════════
+function openModal(mode) {
+  S.modalMode = mode;
+  document.getElementById('modalTitle').textContent = mode === 'project' ? 'New project' : 'New folder';
+  document.getElementById('modalInput').value = '';
+  document.getElementById('modal').classList.add('open');
+  setTimeout(() => document.getElementById('modalInput').focus(), 100);
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+async function modalConfirm() {
+  const name = document.getElementById('modalInput').value.trim();
+  if (!name) { document.getElementById('modalInput').focus(); return; }
+  closeModal();
+  try {
+    if (S.modalMode === 'project') {
+      await api('POST', '/api/projects', { name });
+      toast('Project created');
+      renderProjects();
+    } else {
+      await api('POST', `/api/projects/${S.project.id}/folders`, { name });
+      toast('Folder created');
+      const projects = await api('GET', '/api/projects');
+      S.project = projects.find(p => p.id === S.project.id);
+      renderFolders(S.project);
+    }
+  } catch(e) { toast('Error — try again'); }
+}
+
+document.getElementById('modalInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') modalConfirm();
+});
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+// ══════════════════════════════════════════════════════════════
+// Delete helpers
+// ══════════════════════════════════════════════════════════════
+async function confirmDeleteProject(id) {
+  if (!confirm('Delete this project and all its photos?')) return;
+  try {
+    await api('DELETE', `/api/projects/${id}`);
+    toast('Project deleted');
+    S.project = null; S.folder = null; S.view = 'projects';
+    renderProjects();
+  } catch(e) { toast('Delete failed'); }
+}
+async function confirmDeleteFolder(id) {
+  if (!confirm('Delete this folder and all its photos?')) return;
+  try {
+    await api('DELETE', `/api/folders/${id}`);
+    toast('Folder deleted');
+    S.folder = null; S.view = 'folders';
+    const projects = await api('GET', '/api/projects');
+    S.project = projects.find(p => p.id === S.project.id);
+    renderFolders(S.project);
+  } catch(e) { toast('Delete failed'); }
+}
+async function deletePhoto(id) {
+  try {
+    await api('DELETE', `/api/photos/${id}`);
+    toast('Photo deleted');
+    renderPhotos(S.folder);
+  } catch(e) { toast('Delete failed'); }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Downloads
+// ══════════════════════════════════════════════════════════════
+function downloadProject(id) {
+  toast('Preparing ZIP...');
+  window.location = `/api/projects/${id}/download`;
+}
+function downloadFolder(id) {
+  toast('Preparing ZIP...');
+  window.location = `/api/folders/${id}/download`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// View photo (full screen)
+// ══════════════════════════════════════════════════════════════
+function viewPhoto(id, filename) {
+  window.open(`/api/photos/${id}/image`, '_blank');
+}
+
+// ══════════════════════════════════════════════════════════════
+// Service worker registration
+// ══════════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// Boot
+// ══════════════════════════════════════════════════════════════
+renderProjects();
+</script>
+</body>
+</html>
