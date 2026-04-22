@@ -5,36 +5,30 @@ import os
 
 db = SQLAlchemy()
 
-def create_app():
-    app = Flask(__name__)
-    CORS(app)
+# ── Build the app at module level so gunicorn can find it as app:app ──────────
+app = Flask(__name__)
+CORS(app)
 
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fieldcam-dev-secret')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-        'DATABASE_URL',
-        'sqlite:///fieldcam.db'
-    )
-    # Railway gives postgres:// but SQLAlchemy needs postgresql://
-    if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = app.config[
-            'SQLALCHEMY_DATABASE_URI'
-        ].replace('postgres://', 'postgresql://', 1)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fieldcam-dev-secret')
 
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
+# Render gives DATABASE_URL starting with postgres:// — SQLAlchemy needs postgresql://
+_db_url = os.environ.get('DATABASE_URL', 'sqlite:///fieldcam.db')
+if _db_url.startswith('postgres://'):
+    _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
 
-    db.init_app(app)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
 
-    from routes import register_routes
-    register_routes(app)
+db.init_app(app)
 
-    with app.app_context():
-        db.create_all()
+from routes import register_routes   # noqa: E402 — must come after db init
+register_routes(app)
 
-    return app
+with app.app_context():
+    db.create_all()
 
 
 if __name__ == '__main__':
-    app = create_app()
     port = int(os.environ.get('PORT', 5001))
     app.run(debug=True, host='0.0.0.0', port=port)
