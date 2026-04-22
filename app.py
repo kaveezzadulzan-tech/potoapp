@@ -26,7 +26,8 @@ from routes import register_routes   # noqa: E402 — must come after db init
 register_routes(app)
 
 with app.app_context():
-    db.create_all()
+    db.drop_all()    # drop old schema
+    db.create_all()  # recreate with new columns
 
 
 if __name__ == '__main__':
