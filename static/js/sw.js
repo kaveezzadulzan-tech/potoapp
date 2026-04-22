@@ -1,16 +1,11 @@
-const CACHE = 'fieldcam-v2';
-const SHELL = [
-  '/',
-  '/manifest.json',
-  '/static/js/sw.js',
-];
+const CACHE = 'fieldcam-v3';
 
-// Install — cache the app shell
+// Install — cache the app shell immediately
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(SHELL))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => {
+      return c.add(new Request('/', { cache: 'reload' }));
+    }).then(() => self.skipWaiting())
   );
 });
 
@@ -25,39 +20,56 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Fetch — serve from cache when offline
+// Fetch strategy
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // API calls — network first, fall back to offline response
+  // Only handle GET requests
+  if (e.request.method !== 'GET') return;
+
+  // API calls — network only, return JSON error when offline
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(
-      fetch(e.request).catch(() =>
-        new Response(
-          JSON.stringify({ error: 'offline', message: 'No connection' }),
-          { headers: { 'Content-Type': 'application/json' }, status: 503 }
-        )
-      )
+      fetch(e.request).catch(() => {
+        return new Response(
+          JSON.stringify({ error: 'offline' }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      })
     );
     return;
   }
 
-  // App shell — cache first, then network
+  // App shell — cache first, network fallback
   e.respondWith(
     caches.match(e.request).then(cached => {
-      if (cached) return cached;
+      // Return cached version immediately if available
+      if (cached) {
+        // Update cache in background
+        fetch(e.request).then(res => {
+          if (res && res.ok) {
+            caches.open(CACHE).then(c => c.put(e.request, res));
+          }
+        }).catch(() => {});
+        return cached;
+      }
+
+      // Not cached — fetch from network and cache it
       return fetch(e.request).then(res => {
-        // Cache successful responses
-        if (res.ok) {
+        if (res && res.ok) {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
       }).catch(() => {
-        // If offline and not cached, return cached root
+        // Last resort — return cached root for navigation requests
         if (e.request.mode === 'navigate') {
           return caches.match('/');
         }
+        return new Response('Offline', { status: 503 });
       });
     })
   );
