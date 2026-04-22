@@ -526,7 +526,7 @@ async function renderPhotos(folder) {
 
     for (const p of photos) {
       html += `<div class="photo-thumb" onclick="viewPhoto(${p.id}, '${p.filename}')">
-        <img src="/api/photos/${p.id}/image" alt="${p.filename}" loading="lazy"
+        <img src="/api/photos/${p.id}/preview" alt="${p.filename}" loading="lazy"
              onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
         ${SVG.image}
         <div class="photo-badge badge-g">${SVG.check}</div>
@@ -803,7 +803,7 @@ function downloadFolder(id) {
 // View photo (full screen)
 // ══════════════════════════════════════════════════════════════
 function viewPhoto(id, filename) {
-  window.open(`/api/photos/${id}/image`, '_blank');
+  window.open(`/api/photos/${id}/full`, '_blank');
 }
 
 // ══════════════════════════════════════════════════════════════
