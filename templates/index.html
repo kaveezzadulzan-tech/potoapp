@@ -589,7 +589,26 @@ async function renderPhotos(folder) {
     html += `<button class="btn-outline" onclick="downloadFolder(${folder.id})">${SVG.dl} Download folder ZIP</button>`;
 
   } catch(e) {
-    html = `<div class="empty">${SVG.warn}<p>Could not load photos.</p></div>`;
+    // Even if photo list fails offline, always show the camera button
+    html = `<div class="photo-grid">`;
+    // Show any locally queued photos for this folder
+    try {
+      const queue = (await queueGetAll()).filter(q => q.folderId === folder.id);
+      for (const q of queue) {
+        html += `<div class="photo-thumb">
+          <img src="${q.dataUrl}" alt="${q.filename}">
+          <div class="photo-badge badge-a">${SVG.warn}</div>
+        </div>`;
+      }
+    } catch(_) {}
+    html += `<div class="photo-thumb photo-add" onclick="triggerCamera(${folder.id})">
+      ${SVG.cam}<span>Capture</span>
+    </div>`;
+    html += `</div>`;
+    html += `<div class="sync-bar" style="margin-bottom:10px">
+      <span>📴 Offline — photos will sync later</span>
+    </div>`;
+    html += `<button class="btn-primary" onclick="triggerCamera(${folder.id})">${SVG.cam} Take photo</button>`;
   }
 
   document.getElementById('content').innerHTML = html;
