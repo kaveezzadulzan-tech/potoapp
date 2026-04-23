@@ -516,7 +516,7 @@ async function renderProjects() {
               <div class="pc-name">${p.name}</div>
               <div class="pc-meta">${p.folder_count} folder${p.folder_count!==1?'s':''} · ${p.photo_count} photo${p.photo_count!==1?'s':''}</div>
             </div>
-            <button class="icon-btn" style="flex-shrink:0;margin-left:4px" onclick="event.stopPropagation();renameItem('project',${p.id},`${p.name}`)" title="Rename"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text2)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+            <button class="icon-btn" style="flex-shrink:0;margin-left:4px" onclick="event.stopPropagation();renameItem('project',${p.id},'${p.name.replace(/'/g,String.fromCharCode(39))}')" title="Rename"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text2)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
             <div class="pc-chev">${SVG.chev}</div>
           </div>
           ${hasFolders ? `<div class="pc-folders">${folderPills}${morePill}</div>` : ''}
@@ -580,7 +580,7 @@ async function renderFolders(project) {
             <div class="fc-dot" style="background:${dot}"></div>
             <div class="fc-name">${f.name}</div>
             <div class="fc-count">${f.photo_count} photo${f.photo_count!==1?'s':''}</div>
-            <button class="icon-btn" style="flex-shrink:0;width:28px;height:28px;margin-left:4px" onclick="event.stopPropagation();renameItem('folder',${f.id},`${f.name}`)" title="Rename"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:var(--text2)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+            <button class="icon-btn" style="flex-shrink:0;width:28px;height:28px;margin-left:4px" onclick="event.stopPropagation();renameItem('folder',${f.id},'${f.name.replace(/'/g,String.fromCharCode(39))}')" title="Rename"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:var(--text2)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
             <div class="fc-chev">${SVG.chev}</div>
           </div>
           ${chips ? `<div class="fc-chips">${chips}</div>` : ''}
