@@ -93,6 +93,17 @@ def register_routes(app):
         db.session.commit()
         return jsonify(p.to_dict()), 201
 
+    @app.route('/api/projects/<int:pid>', methods=['PATCH'])
+    def rename_project(pid):
+        p    = Project.query.get_or_404(pid)
+        data = request.get_json()
+        name = (data or {}).get('name', '').strip()
+        if not name:
+            return jsonify({'error': 'Name required'}), 400
+        p.name = name
+        db.session.commit()
+        return jsonify(p.to_dict())
+
     @app.route('/api/projects/<int:pid>', methods=['DELETE'])
     def delete_project(pid):
         p = Project.query.get_or_404(pid)
@@ -148,6 +159,17 @@ def register_routes(app):
         db.session.add(f)
         db.session.commit()
         return jsonify(f.to_dict()), 201
+
+    @app.route('/api/folders/<int:fid>', methods=['PATCH'])
+    def rename_folder(fid):
+        f    = Folder.query.get_or_404(fid)
+        data = request.get_json()
+        name = (data or {}).get('name', '').strip()
+        if not name:
+            return jsonify({'error': 'Name required'}), 400
+        f.name = name
+        db.session.commit()
+        return jsonify(f.to_dict())
 
     @app.route('/api/folders/<int:fid>', methods=['DELETE'])
     def delete_folder(fid):

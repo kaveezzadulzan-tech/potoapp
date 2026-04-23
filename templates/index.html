@@ -182,6 +182,51 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 /* ── Camera input ── */
 #cameraInput { display: none; }
 
+/* ── Sync progress overlay ── */
+#syncOverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.85); z-index: 300;
+  align-items: flex-end; justify-content: center;
+}
+#syncOverlay.open { display: flex; }
+.sync-panel {
+  background: var(--s1); border-radius: 18px 18px 0 0;
+  border-top: 0.5px solid var(--border2);
+  padding: 20px 16px 32px; width: 100%; max-width: 480px;
+}
+.sync-panel-title {
+  font-size: 14px; font-weight: 500; color: var(--text);
+  margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+}
+.sync-panel-sub { font-size: 11px; color: var(--text2); margin-bottom: 16px; }
+.sync-progress-wrap {
+  background: var(--s3); border-radius: 100px;
+  height: 8px; overflow: hidden; margin-bottom: 14px;
+}
+.sync-progress-fill {
+  height: 100%; background: var(--blue);
+  border-radius: 100px; width: 0%;
+  transition: width 0.4s ease;
+}
+.sync-items { display: flex; flex-direction: column; gap: 5px; max-height: 220px; overflow-y: auto; }
+.sync-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--s2); border-radius: var(--r-sm);
+  padding: 8px 10px;
+}
+.sync-item-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sync-item-name { flex: 1; font-size: 11px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sync-item-status { font-size: 10px; font-weight: 500; flex-shrink: 0; }
+.si-pending .sync-item-dot { background: var(--s4); }
+.si-pending .sync-item-status { color: var(--text3); }
+.si-uploading .sync-item-dot { background: var(--blue); animation: pulse 1s infinite; }
+.si-uploading .sync-item-status { color: var(--blue); }
+.si-done .sync-item-dot { background: var(--green); }
+.si-done .sync-item-status { color: var(--green); }
+.si-failed .sync-item-dot { background: var(--red); }
+.si-failed .sync-item-status { color: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
 /* ── Offline badge ── */
 .offline-pill { background: var(--amber-bg); border: 0.5px solid #4a3800; border-radius: var(--r-pill); padding: 3px 9px; font-size: 9px; color: var(--amber); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
 .offline-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); display: block; }
@@ -217,6 +262,20 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
       <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
       <span>Settings</span>
     </button>
+  </div>
+</div>
+
+<div id="syncOverlay">
+  <div class="sync-panel">
+    <div class="sync-panel-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" style="fill:var(--blue)"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+      Syncing photos
+    </div>
+    <div class="sync-panel-sub" id="syncPanelSub">Preparing...</div>
+    <div class="sync-progress-wrap">
+      <div class="sync-progress-fill" id="syncProgressBar"></div>
+    </div>
+    <div class="sync-items" id="syncItems"></div>
   </div>
 </div>
 
@@ -457,6 +516,7 @@ async function renderProjects() {
               <div class="pc-name">${p.name}</div>
               <div class="pc-meta">${p.folder_count} folder${p.folder_count!==1?'s':''} · ${p.photo_count} photo${p.photo_count!==1?'s':''}</div>
             </div>
+            <button class="icon-btn" style="flex-shrink:0;margin-left:4px" onclick="event.stopPropagation();renameItem('project',${p.id},`${p.name}`)" title="Rename"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text2)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
             <div class="pc-chev">${SVG.chev}</div>
           </div>
           ${hasFolders ? `<div class="pc-folders">${folderPills}${morePill}</div>` : ''}
@@ -520,6 +580,7 @@ async function renderFolders(project) {
             <div class="fc-dot" style="background:${dot}"></div>
             <div class="fc-name">${f.name}</div>
             <div class="fc-count">${f.photo_count} photo${f.photo_count!==1?'s':''}</div>
+            <button class="icon-btn" style="flex-shrink:0;width:28px;height:28px;margin-left:4px" onclick="event.stopPropagation();renameItem('folder',${f.id},`${f.name}`)" title="Rename"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:var(--text2)"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
             <div class="fc-chev">${SVG.chev}</div>
           </div>
           ${chips ? `<div class="fc-chips">${chips}</div>` : ''}
@@ -691,10 +752,39 @@ async function doSync() {
   if (queue.length === 0) { toast('Nothing to sync'); return; }
   if (!navigator.onLine)  { toast('No connection — try again later'); return; }
 
-  toast(`Syncing ${queue.length} photo${queue.length>1?'s':''}...`);
+  const total   = queue.length;
+  const overlay = document.getElementById('syncOverlay');
+  const bar     = document.getElementById('syncProgressBar');
+  const sub     = document.getElementById('syncPanelSub');
+  const itemsEl = document.getElementById('syncItems');
+
+  // Show overlay
+  overlay.classList.add('open');
+  bar.style.width = '0%';
+  sub.textContent = 'Starting...';
+
+  // Render all items as pending
+  itemsEl.innerHTML = queue.map(q =>
+    `<div class="sync-item si-pending" id="si-${q.id}">
+      <div class="sync-item-dot"></div>
+      <div class="sync-item-name">${q.filename}</div>
+      <div class="sync-item-status">Waiting</div>
+    </div>`
+  ).join('');
 
   let ok = 0;
-  for (const q of queue) {
+  for (let i = 0; i < queue.length; i++) {
+    const q  = queue[i];
+    const el = document.getElementById('si-' + q.id);
+
+    // Mark uploading
+    if (el) {
+      el.className = 'sync-item si-uploading';
+      el.querySelector('.sync-item-status').textContent = 'Uploading...';
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    sub.textContent = `Uploading ${i + 1} of ${total}...`;
+
     try {
       await api('POST', `/api/folders/${q.folderId}/photos`, {
         filename:  q.filename,
@@ -703,14 +793,35 @@ async function doSync() {
       });
       await queueDelete(q.id);
       ok++;
+      if (el) {
+        el.className = 'sync-item si-done';
+        el.querySelector('.sync-item-status').textContent = '✓ Done';
+      }
     } catch(e) {
       console.warn('Failed to sync', q.filename, e);
+      if (el) {
+        el.className = 'sync-item si-failed';
+        el.querySelector('.sync-item-status').textContent = '✗ Failed';
+      }
     }
+
+    // Update progress bar
+    bar.style.width = Math.round(((i + 1) / total) * 100) + '%';
   }
 
-  toast(`Synced ${ok} of ${queue.length} photos`);
-  if (S.view === 'sync')     renderSync();
-  if (S.view === 'projects') renderProjects();
+  // Done
+  bar.style.width = '100%';
+  const failed = total - ok;
+  sub.textContent = failed > 0
+    ? `Done — ${ok} synced, ${failed} failed`
+    : `All ${ok} photo${ok !== 1 ? 's' : ''} synced!`;
+
+  setTimeout(() => {
+    overlay.classList.remove('open');
+    if (S.view === 'sync')     renderSync();
+    if (S.view === 'projects') renderProjects();
+    if (S.view === 'photos')   renderPhotos(S.folder);
+  }, 2000);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -788,6 +899,22 @@ function openModal(mode) {
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
+async function renameItem(type, id, currentName) {
+  const newName = prompt(`Rename ${type}:`, currentName);
+  if (!newName || newName.trim() === currentName) return;
+  try {
+    const path = type === 'project' ? `/api/projects/${id}` : `/api/folders/${id}`;
+    await api('PATCH', path, { name: newName.trim() });
+    toast(`Renamed to "${newName.trim()}"`);
+    if (type === 'project') renderProjects();
+    else {
+      const projects = await api('GET', '/api/projects');
+      S.project = projects.find(p => p.id === S.project.id);
+      renderFolders(S.project);
+    }
+  } catch(e) { toast('Rename failed'); }
+}
+
 async function modalConfirm() {
   const name = document.getElementById('modalInput').value.trim();
   if (!name) { document.getElementById('modalInput').focus(); return; }
